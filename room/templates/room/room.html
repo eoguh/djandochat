@@ -1,0 +1,103 @@
+{% extends 'core/base.html' %}
+
+{% block tittle %} {{ room.name }} | {% endblock %}
+
+
+
+{% block content %}
+
+<div class="p-10 lg:p-20 text-center">
+    <h1 class="text-3xl lg:text-6xl text-white">{{ room.name }}</h1>
+</div>
+<div class="lg:w-2/4 mx-4 lg:mx-auto p-4 bg-white rounded-xl">
+    <div class="chat-messages space-y-3" id='chat-messages'>
+
+        <div class="p-4 bg-gray-200 rounded-xl">
+            <p class='front-semibold'>Username</p>
+            <p>The message lorem ipsum dolor sit amet.</p>
+        </div>
+        
+
+        <div class="p-4 bg-gray-200 rounded-xl">
+            <p class='front-semibold'>Username</p>
+            <p>The message lorem ipsum dolor sit amet.</p>
+        </div>
+        
+
+        <div class="p-4 bg-gray-200 rounded-xl">
+            <p class='front-semibold'>Username</p>
+            <p>The message lorem ipsum dolor sit amet.</p>
+        </div>
+        
+    </div>
+</div>
+
+<div class="lg:w-2/4 mx-4 lg:mx-auto p-4 bg-white rounded-xl">
+    <form method='POST' action='.' class='flex'>
+        <input type='text' name='content' class='flex-1 mr-3' placeholder='Your message here'>
+        <button type= 'button' class='px-5 py-3 rounded-xl text-white bg-teal-600 hover:bg-teal-700'
+        id='chat-message-submit'>
+        Submit</button>
+        
+        <button type= 'button' class='px-5 py-3 rounded-xl text-white bg-teal-600 hover:bg-teal-700'
+        id='chat-s'>
+        Test Submit</button>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block script %}
+
+{{room.slug|json_script:"json-roomname"}}
+{{request.user.username|json_script:"json-username"}}
+ <script>
+    document.querySelector('#chat-s').onclick = function testclick(){
+        alert('Test click works')
+    }
+
+    const roomName = JSON.parse(document.getElementById('json-roomname').textContent)
+    const userName = JSON.parse(document.getElementById('json-username').textContent)
+
+    const chatSocket = new WebSocket(
+        'ws://'
+        + window.location.host
+        + '/ws/'
+        + roomName
+        + '/'
+    );
+
+    chatSocket.onmessage = function(e){
+        console.log('onmessage')
+        const data = JSON.parse(e.data)
+        if(data.message){
+            let html = '<div class="p-4 bg-gray-200 rounded-xl">';
+                html += "<p class='front-semibold'>" + data.username + '</p>';
+                html += '<p>' + data.message +'</p>';
+                html += '</div>';
+            document.querySelector('#chat-messages') += html;
+        }else{
+            alert('empty message box!')
+        }
+    }
+    chatSocket.onclose = function(e){
+        console.log("chat socket closed")
+    }
+
+    document.querySelector('#chat-message-submit').onmousedown = function(e){
+        //e.preventDefault();
+        const messageInputDom = document.querySelector('#chat-meesage-input')
+        const message = messageInputDom.value
+
+        chatSocket.send(JSON.stringify({
+            'message': message,
+            'username': userName,
+            'room': roomName
+        }))
+        messageInputDom.value = ''
+        //return false;
+    }
+
+ </script>
+{% endblock %}
+
